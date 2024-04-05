@@ -1,0 +1,69 @@
+#!/bin/bash
+################################################################################
+# 10-Mar-2024 /KJW
+#
+# Added Preempt to display
+# 27-Mar-2024 /KJW
+################################################################################
+set -u
+
+MAX_NAME_WIDTH=13 # For display formatting
+MAX_TRES_WIDTH=30 # For display formatting
+
+MAX_QOS_WIDTH=40 # For display formating
+
+################################################################################
+# Non-config globals
+################################################################################
+ME=${0##*/}
+USAGE="Synopsis:
+	List all QoS with respective max configs
+	or
+	List all accounts that have access to a particular QoS
+
+Syntax:
+	$ME [-h] [qosname|login]
+
+In which:
+
+	-h Displays this message
+	qosname -- A QoS name, such as \"high_$LOGNAME\"
+	login ---- A login, PI or student
+"
+
+################################################################################
+# Subs
+################################################################################
+bomb() {
+	echo "$ME: ABTERM--${*:-}"
+}
+
+################################################################################
+# Mainline
+################################################################################
+while [ $# -gt 0 ] ; do
+	case "$1" in
+		'-h' ) echo "$USAGE" ; exit 1 ;;
+		'-'* ) bomb "Unknown option \"$1\", use \"-h\" for help" ;;
+		* ) break ;;
+	esac
+	shift
+done
+
+if [ $# -le 0 ] ; then
+	sacctmgr show qos format=name%$MAX_NAME_WIDTH,MaxWall,MaxTRES,MaxTresPA%$MAX_TRES_WIDTH,Preempt
+else
+	argv=$*
+	set -- $(sacctmgr --noheader --parsable2 show qos format=name)
+	[ $# -gt 0 ] || bomb "Unexpected sacctmgr error"
+	qos_list=$*
+	for name in $argv ; do
+		if [[ " $qos_list " =~ " $name " ]] ; then
+			sacctmgr show qos name=$name format=name%$MAX_NAME_WIDTH,MaxWall,MaxTRES,MaxTresPA%$MAX_TRES_WIDTH,Preempt
+		else
+			sacctmgr show assoc where account=$name format=account%$MAX_NAME_WIDTH,user%$MAX_NAME_WIDTH,qos%$MAX_QOS_WIDTH
+		fi
+	done
+fi
+exit 0
+#sacctmgr --noheader --parsable show assoc where account=$pi format=account,user,qos | egrep "^$pi\|$pi\|.*\b$qos\b"
