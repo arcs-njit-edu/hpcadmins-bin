@@ -2,7 +2,7 @@
 # 3-Apr-2024 /AM
 
 # Set the timeout duration
-timeout_duration=4300m
+timeout_duration=4315m
 
 timeout $timeout_duration "$@"
     if [[ $? == 124 ]]; then
